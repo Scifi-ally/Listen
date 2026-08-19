@@ -9,4 +9,6 @@ sessions/*.md
 sessions/*.wav
 models/*
 !models/.gitkeep
+.local/*
+.cache/*
 .env

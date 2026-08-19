@@ -30,6 +30,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 SESSIONS_DIR = Path(os.getenv("LISTEN_SESSIONS_DIR", ROOT_DIR / "sessions"))
 MODELS_DIR = Path(os.getenv("LISTEN_MODELS_DIR", ROOT_DIR / "models"))
 DEFAULT_OLLAMA_HOST = "http://127.0.0.1:11434"
+DEFAULT_ASR_MODEL = os.getenv("LISTEN_DEFAULT_ASR_MODEL", "whisper-small-int8")
 _ALLOWED_CATEGORIES = {"definition", "fact", "example", "emphasis", "key point"}
 _SESSION_ID_RE = re.compile(r"^[0-9]{8}-[0-9]{6}-[0-9a-f]{6}$")
 
@@ -43,11 +44,22 @@ def is_loopback_http_url(value: str) -> bool:
     return parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "localhost", "::1"}
 
 
+def _looks_like_whisper_model(path: Path) -> bool:
+    model_files = list(path.glob("model.bin")) + list(path.glob("model*.safetensors"))
+    return (
+        path.is_dir()
+        and (path / "config.json").is_file()
+        and (path / "tokenizer.json").is_file()
+        and (path / "vocabulary.txt").is_file()
+        and bool(model_files)
+    )
+
+
 def available_local_models(root: Path = MODELS_DIR) -> list[str]:
     root = Path(root)
     if not root.exists():
         return []
-    return sorted(path.name for path in root.iterdir() if path.is_dir() and not path.name.startswith("."))
+    return sorted(path.name for path in root.iterdir() if not path.name.startswith(".") and _looks_like_whisper_model(path))
 
 
 def local_readiness(root: Path = MODELS_DIR) -> dict[str, Any]:
@@ -225,8 +237,13 @@ class FasterWhisperTranscriber:
             raise RuntimeError(f"Could not load Whisper on {device}: {exc}") from exc
 
     def transcribe(self, segment: AudioSegment) -> str:
+        try:
+            import numpy as np
+            audio = np.asarray(segment.samples, dtype=np.float32)
+        except ImportError:
+            audio = segment.samples
         segments, _ = self.model.transcribe(
-            segment.samples,
+            audio,
             language=None,
             beam_size=5,
             vad_filter=False,
@@ -499,7 +516,7 @@ class LectureRunner:
         self,
         session: dict[str, Any],
         publish: Callable[[dict[str, Any]], None],
-        model_name: str = "whisper-medium-int8",
+        model_name: str = DEFAULT_ASR_MODEL,
         note_interval_seconds: float = 10.0,
         vad_threshold: float = 0.012,
         store: SessionStore | None = None,
@@ -591,8 +608,8 @@ class LectureRunner:
         })
         try:
             import sounddevice as sd
-        except ImportError:
-            self.publish({"type": "status", "status": "manual_input", "detail": "Install requirements-audio.txt for microphone capture; manual transcript input remains available."})
+        except (ImportError, OSError) as exc:
+            self.publish({"type": "status", "status": "manual_input", "detail": f"Local microphone is unavailable ({exc}); manual transcript input remains available."})
             return
 
         def callback(indata: Any, frames: int, callback_time: Any, status: Any) -> None:

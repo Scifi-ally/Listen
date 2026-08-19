@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from .core import (
+    DEFAULT_ASR_MODEL,
     DEFAULT_OLLAMA_HOST,
     LectureRunner,
     SessionStore,
@@ -30,7 +31,7 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
 class StartRequest(BaseModel):
     title: str = Field(default="Untitled lecture", max_length=160)
-    model: str = Field(default="whisper-medium-int8", max_length=120, pattern=r"^[A-Za-z0-9_.:-]+$")
+    model: str = Field(default=DEFAULT_ASR_MODEL, max_length=120, pattern=r"^[A-Za-z0-9_.:-]+$")
     note_interval_seconds: float = Field(default=10.0, ge=5.0, le=60.0)
     vad_threshold: float = Field(default=0.012, ge=0.001, le=0.2)
     audio_device: str | None = Field(default=None, max_length=200)
@@ -86,8 +87,8 @@ async def config() -> dict[str, Any]:
     return {
         "offline": True,
         "models_dir": os.getenv("LISTEN_MODELS_DIR", str(BASE_DIR.parent / "models")),
-        "default_asr_model": "whisper-medium-int8",
-        "asr_options": ["whisper-medium-int8", "whisper-small-int8"],
+        "default_asr_model": DEFAULT_ASR_MODEL,
+        "asr_options": ["whisper-small-int8", "whisper-medium-int8"],
         "local_models": readiness["local_models"],
         "default_llm_model": os.getenv("LISTEN_OLLAMA_MODEL", "qwen2.5:3b"),
         "ollama_host": os.getenv("LISTEN_OLLAMA_HOST", DEFAULT_OLLAMA_HOST),
