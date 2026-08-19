@@ -24,6 +24,12 @@ button { cursor: pointer; }
 .brand strong { display: block; font-size: 17px; letter-spacing: .02em; }
 .brand div span { display: block; color: var(--subtle); text-transform: uppercase; font-size: 8px; letter-spacing: .2em; margin-top: 2px; }
 .offline-pill { color: var(--green); font-size: 10px; letter-spacing: .16em; font-weight: 700; display: flex; gap: 8px; align-items: center; }
+.readiness-strip { display: flex; align-items: center; gap: 8px; min-height: 34px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 10px; letter-spacing: .03em; }
+.readiness-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); }
+.readiness-strip.ready .readiness-dot { background: var(--green); }
+.readiness-strip.warn .readiness-dot { background: var(--amber); }
+.readiness-strip.error .readiness-dot { background: var(--red); }
+.readiness-detail { margin-left: auto; color: var(--subtle); font-size: 9px; }
 .pulse { width: 7px; height: 7px; background: var(--green); border-radius: 50%; box-shadow: 0 0 0 4px rgba(181,243,108,.1); }
 .hero-row { min-height: 270px; padding: 54px 0 45px; display: flex; gap: 60px; align-items: end; justify-content: space-between; }
 .eyebrow, .panel-kicker { color: var(--subtle); font-weight: 800; font-size: 10px; letter-spacing: .19em; margin: 0 0 13px; }
@@ -93,6 +99,8 @@ code { color: #d6e2ce; background: #101713; padding: 2px 5px; border-radius: 2px
 .settings-list label { color: var(--muted); font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 10px; }
 .settings-list label > span { text-align: right; color: var(--green); font-variant-numeric: tabular-nums; }
 .settings-list select { grid-column: 1 / -1; background: var(--panel-deep); color: var(--ink); border: 1px solid var(--line); border-radius: 2px; padding: 7px; font-size: 11px; }
+.checkbox-label { display: flex !important; grid-template-columns: none !important; justify-content: flex-start; gap: 8px !important; color: var(--muted); }
+.checkbox-label input { accent-color: var(--green); }
 .settings-list input[type="range"] { grid-column: 1 / -1; width: 100%; accent-color: var(--green); }
 footer { display: flex; justify-content: space-between; color: #4e5c53; font-size: 8px; letter-spacing: .17em; padding: 22px 1px 0; }
 @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }

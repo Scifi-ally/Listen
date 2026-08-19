@@ -16,10 +16,15 @@ const sessionFile = $('#session-file');
 const manualForm = $('#manual-form');
 const manualInput = $('#manual-text');
 const modelSelect = $('#model-select');
+const deviceSelect = $('#device-select');
+const recordAudio = $('#record-audio');
 const intervalRange = $('#interval-range');
 const intervalOutput = $('#interval-output');
 const vadRange = $('#vad-range');
 const vadOutput = $('#vad-output');
+const readinessStrip = $('#readiness-strip');
+const readinessText = $('#readiness-text');
+const readinessDetail = $('#readiness-detail');
 
 let sessionId = null;
 let socket = null;
@@ -33,6 +38,12 @@ const seenNotes = new Set();
 function setStatus(label, mode = 'idle') {
   statusText.textContent = label;
   statusDot.className = `status-dot ${mode}`;
+}
+
+function setReadiness(label, mode, detail = '') {
+  readinessStrip.className = `readiness-strip ${mode}`;
+  readinessText.textContent = label;
+  readinessDetail.textContent = detail;
 }
 
 function updateTimer() {
@@ -119,8 +130,12 @@ function connectSocket() {
       appendNote(message.item);
     } else if (message.type === 'status') {
       if (message.status === 'manual_input') setStatus('Waiting for local mic dependencies', 'warn');
-      else if (message.status === 'audio_warning') setStatus(message.detail, 'warn');
-      else if (message.status === 'listening') setStatus('Listening locally', 'live');
+      else if (message.status === 'audio_warning' || message.status === 'audio_overflow') setStatus(message.detail, 'warn');
+      else if (message.status === 'extracting_notes') setStatus('Writing notes locally', 'live');
+      else if (message.status === 'listening') {
+        const asrReady = message.transcriber === 'ready';
+        setStatus(asrReady ? 'Listening locally' : 'Mic active · ASR needs setup', asrReady ? 'live' : 'warn');
+      }
     } else if (message.type === 'session_stopped') {
       setStatus('Session saved locally', 'idle');
       startedAt = null;
@@ -137,6 +152,7 @@ async function startSession() {
   startButton.disabled = true;
   setStatus('Preparing local pipeline…', 'warn');
   try {
+    const selectedDevice = deviceSelect.value === '' ? null : deviceSelect.value;
     const response = await fetch('/api/sessions/start', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -144,6 +160,8 @@ async function startSession() {
         model: modelSelect.value,
         note_interval_seconds: Number(intervalRange.value),
         vad_threshold: Number(vadRange.value) / 1000,
+        audio_device: selectedDevice,
+        record_audio: recordAudio.checked,
       }),
     });
     const data = await response.json();
@@ -164,7 +182,8 @@ async function stopSession() {
   stopButton.disabled = true;
   setStatus('Saving session…', 'warn');
   try {
-    await fetch(`/api/sessions/${sessionId}/stop`, { method: 'POST' });
+    const response = await fetch(`/api/sessions/${sessionId}/stop`, { method: 'POST' });
+    if (!response.ok) throw new Error('The local session could not be stopped cleanly');
   } catch (error) {
     setStatus(`Save warning: ${error.message}`, 'warn');
   }
@@ -191,6 +210,46 @@ vadRange.addEventListener('input', () => { vadOutput.value = (Number(vadRange.va
 startButton.addEventListener('click', startSession);
 stopButton.addEventListener('click', stopSession);
 manualInput.disabled = true;
-fetch('/api/config').then((response) => response.json()).then((config) => {
-  if (config.default_llm_model) notesHint.textContent = `Local extractor: ${config.default_llm_model}`;
-}).catch(() => {});
+
+async function loadReadiness() {
+  try {
+    const configResponse = await fetch('/api/config');
+    const config = await configResponse.json();
+    const readiness = config.readiness || {};
+    const localModels = readiness.local_models || [];
+    if (!readiness.audio_dependency) {
+      setReadiness('UI ready · microphone dependency not installed', 'warn', 'pip install -r requirements-audio.txt');
+    } else if (!readiness.asr_dependency) {
+      setReadiness('Microphone ready · Whisper dependency not installed', 'warn', 'pip install -r requirements-audio.txt');
+    } else if (!localModels.length) {
+      setReadiness('Microphone ready · local Whisper model not found', 'warn', 'place model under ./models');
+    } else {
+      setReadiness('Local microphone and Whisper model detected', 'ready', localModels.join(', '));
+    }
+
+    if (Array.isArray(config.local_models)) {
+      config.local_models.forEach((model) => {
+        if (!Array.from(modelSelect.options).some((option) => option.value === model)) {
+          const option = document.createElement('option');
+          option.value = model;
+          option.textContent = `${model} · local`;
+          modelSelect.appendChild(option);
+        }
+      });
+    }
+
+    const devicesResponse = await fetch('/api/audio/devices');
+    const devices = await devicesResponse.json();
+    (devices.devices || []).forEach((device) => {
+      const option = document.createElement('option');
+      option.value = String(device.index);
+      option.textContent = `${device.name} · ${device.channels} ch`;
+      deviceSelect.appendChild(option);
+    });
+    if (config.default_llm_model) notesHint.textContent = `Local extractor: ${config.default_llm_model}`;
+  } catch (error) {
+    setReadiness('Could not read local readiness', 'error', 'Check that the server is running');
+  }
+}
+
+loadReadiness();
