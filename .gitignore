@@ -11,4 +11,6 @@ models/*
 !models/.gitkeep
 .local/*
 .cache/*
+node_modules/
+dist/
 .env

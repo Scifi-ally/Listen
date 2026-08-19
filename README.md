@@ -13,7 +13,7 @@ cd Listen
 
 The launcher creates `.venv`, installs the Python/audio/ASR dependencies, downloads the local **faster-whisper-small** speech model into `./models/whisper-small-int8`, downloads the official project-local Ollama runtime into `./.local/ollama`, pulls the local **Qwen2.5 3B** note model into `./models/ollama`, runs a readiness check, and starts the app at <http://127.0.0.1:8765>. After the first setup, `./run.sh` reuses the environment and verifies existing model files instead of downloading them again.
 
-The small model is the default because it is the safer starting point for an RTX 3050 6 GB laptop. To download the larger Whisper model instead, run:
+The small model is the default because it is the safer starting point across CPU-only laptops and laptops with limited GPU memory. To download the larger Whisper model instead, run:
 
 ```bash
 ./scripts/setup.sh --size=medium --launch
@@ -64,7 +64,7 @@ Choose **Save a local WAV recording** if you want the raw microphone capture ret
 | `LISTEN_SESSIONS_DIR` | `./sessions` | Local JSON, Markdown, and optional WAV output directory |
 | `LISTEN_MODELS_DIR` | `./models` | Local faster-whisper model directory |
 | `LISTEN_DEFAULT_ASR_MODEL` | `whisper-small-int8` | Model selected by default in the API |
-| `LISTEN_ASR_DEVICE` | `cuda` | `cuda` or `cpu` for faster-whisper |
+| `LISTEN_ASR_DEVICE` | `auto` | `auto`, `cuda`, or `cpu`; auto selects CUDA when available and otherwise CPU |
 | `LISTEN_CPU_FALLBACK` | `1` | Try local CPU ASR if CUDA model loading fails |
 | `LISTEN_VAD_ENGINE` | `auto` | `auto` prefers WebRTC VAD; set `energy` to force the fallback |
 | `LISTEN_OLLAMA_HOST` | `http://127.0.0.1:11434` | Loopback-only Ollama endpoint |
@@ -94,3 +94,15 @@ Listen does not contain cloud API keys, telemetry, analytics, remote model downl
 [4]: https://docs.ollama.com/linux "Official Ollama Linux documentation"
 
 The setup choices are based on the local model formats and commands documented by the official sources above. [1] [2] [3] [4]
+
+## Electron desktop app
+
+The preferred desktop entrypoint is:
+
+```bash
+./run-desktop.sh
+```
+
+It performs first-run setup when needed, installs Electron, starts the local Python backend and loopback Ollama service, and opens a **frameless Electron window** with no browser navbar. The interface uses a black canvas, hairline separators, inline controls, and a split transcript/notes workspace rather than boxed cards.
+
+The runtime is hardware-adaptive. `LISTEN_ASR_DEVICE=auto` detects CUDA through CTranslate2 when available and otherwise uses CPU int8 inference. WebRTC VAD is preferred when available and the built-in energy VAD remains as a fallback. The local Whisper-small model is the portable default; users with more capable hardware can choose the medium model from setup or the UI.

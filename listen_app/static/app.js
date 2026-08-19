@@ -1,5 +1,14 @@
 const $ = (selector) => document.querySelector(selector);
 
+const desktopBridge = window.listenDesktop || null;
+document.querySelectorAll('[data-window]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const action = button.dataset.window;
+    if (desktopBridge && typeof desktopBridge[action] === 'function') desktopBridge[action]();
+  });
+});
+if (desktopBridge?.onBackendError) desktopBridge.onBackendError((message) => setStatus(message, 'error'));
+
 const startButton = $('#start-btn');
 const stopButton = $('#stop-btn');
 const titleInput = $('#session-title');

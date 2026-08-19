@@ -62,6 +62,19 @@ def available_local_models(root: Path = MODELS_DIR) -> list[str]:
     return sorted(path.name for path in root.iterdir() if not path.name.startswith(".") and _looks_like_whisper_model(path))
 
 
+def detect_asr_device() -> str:
+    requested = os.getenv("LISTEN_ASR_DEVICE", "auto").lower()
+    if requested in {"cpu", "cuda"}:
+        return requested
+    try:
+        import ctranslate2
+        if ctranslate2.get_cuda_device_count() > 0:
+            return "cuda"
+    except (ImportError, AttributeError, RuntimeError, OSError):
+        pass
+    return "cpu"
+
+
 def local_readiness(root: Path = MODELS_DIR) -> dict[str, Any]:
     return {
         "audio_dependency": importlib.util.find_spec("sounddevice") is not None,
@@ -69,7 +82,7 @@ def local_readiness(root: Path = MODELS_DIR) -> dict[str, Any]:
         "asr_dependency": importlib.util.find_spec("faster_whisper") is not None,
         "local_models": available_local_models(root),
         "ollama_host": os.getenv("LISTEN_OLLAMA_HOST", DEFAULT_OLLAMA_HOST),
-        "asr_device": os.getenv("LISTEN_ASR_DEVICE", "cuda"),
+        "asr_device": detect_asr_device(),
     }
 
 
@@ -255,7 +268,7 @@ class FasterWhisperTranscriber:
 
 def create_transcriber(model_name: str, device: str | None = None) -> Transcriber:
     model_path = MODELS_DIR / model_name
-    preferred = device or os.getenv("LISTEN_ASR_DEVICE", "cuda")
+    preferred = device or detect_asr_device()
     attempts = [(preferred, "int8")]
     if preferred == "cuda" and os.getenv("LISTEN_CPU_FALLBACK", "1") == "1":
         attempts.append(("cpu", "int8"))

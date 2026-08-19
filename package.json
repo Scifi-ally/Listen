@@ -1,0 +1,17 @@
+{
+  "name": "listen-offline-lecture-notes",
+  "version": "0.2.0",
+  "private": true,
+  "description": "A local-first bilingual lecture note-taking desktop app",
+  "main": "electron/main.cjs",
+  "author": "Scifi-ally",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "desktop": "./run-desktop.sh",
+    "test": "node --check electron/main.cjs && node --check electron/preload.cjs && node --check listen_app/static/app.js"
+  },
+  "devDependencies": {
+    "electron": "^37.2.6"
+  }
+}

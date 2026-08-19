@@ -3,56 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Listen — Offline Lecture Notes</title>
+    <title>Listen</title>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <div class="app-shell">
-      <header class="topbar">
-        <div class="brand"><span class="brand-mark">L</span><div><strong>Listen</strong><span>offline lecture intelligence</span></div></div>
-        <div class="offline-pill"><span class="pulse"></span>LOCAL ONLY</div>
+    <div class="desktop-app">
+      <header class="windowbar" id="window-drag-region">
+        <div class="wordmark"><span class="wordmark-dot"></span><span>listen</span></div>
+        <div class="window-state"><span id="readiness-strip" class="readiness-strip"><span class="readiness-dot"></span><span id="readiness-text">Preparing local runtime</span><span id="readiness-detail" class="readiness-detail"></span></span></div>
+        <div class="window-actions"><button data-window="minimize" aria-label="Minimize">−</button><button data-window="maximize" aria-label="Maximize">□</button><button data-window="close" aria-label="Close">×</button></div>
       </header>
 
-      <div class="readiness-strip" id="readiness-strip"><span class="readiness-dot"></span><span id="readiness-text">Checking local readiness…</span><span class="readiness-detail" id="readiness-detail"></span></div>
-
-      <main>
-        <section class="hero-row">
-          <div>
-            <p class="eyebrow">FIELD NOTES / REAL TIME</p>
-            <h1>Stay present.<br /><em>Keep the thread.</em></h1>
-            <p class="hero-copy">A quiet companion for bilingual classrooms. Speech and notes stay on this laptop, from first word to final export.</p>
-          </div>
-          <div class="session-card">
-            <label for="session-title">SESSION TITLE</label>
-            <input id="session-title" value="Untitled lecture" maxlength="160" />
-            <div class="control-row">
-              <button class="primary" id="start-btn"><span class="record-dot"></span> Start listening</button>
-              <button class="secondary" id="stop-btn" disabled>Stop session</button>
-            </div>
-            <div class="status-line"><span id="status-dot" class="status-dot idle"></span><span id="status-text">Ready when you are</span><span id="timer">00:00</span></div>
-          </div>
+      <main class="content">
+        <section class="intro">
+          <div class="intro-copy"><p class="overline">LECTURE / LIVE CAPTURE</p><h1>Keep the <i>thread.</i></h1></div>
+          <div class="session-start"><input id="session-title" value="Untitled lecture" maxlength="160" aria-label="Session title" /><div class="session-actions"><button class="start-control" id="start-btn"><span class="record-dot"></span>Start listening</button><button class="stop-control" id="stop-btn" disabled>Stop</button></div><div class="status-line"><span id="status-dot" class="status-dot idle"></span><span id="status-text">Ready when you are</span><span id="timer">00:00</span></div></div>
         </section>
 
-        <section class="workspace">
-          <div class="panel transcript-panel">
-            <div class="panel-head"><div><p class="panel-kicker">RAW TRANSCRIPT</p><h2>What was said</h2></div><span class="count" id="transcript-count">0 segments</span></div>
-            <div class="stream" id="transcript-stream"><div class="empty-state"><span class="empty-icon">⌁</span><p>Start a session to see speech appear here.</p><small>Hindi, English, and Hinglish are kept exactly as heard.</small></div></div>
-            <form class="manual-form" id="manual-form"><input id="manual-text" placeholder="Add a correction or paste a test sentence…" autocomplete="off" /><button title="Add transcript" type="submit">＋</button></form>
-          </div>
+        <section class="streams">
+          <section class="stream-column transcript-column" aria-labelledby="transcript-heading">
+            <div class="stream-heading"><div><span class="column-index">01</span><h2 id="transcript-heading">Transcript</h2></div><span class="count" id="transcript-count">0 segments</span></div>
+            <div class="stream" id="transcript-stream"><div class="empty-state"><span class="empty-glyph">⌁</span><p>Start a session to hear the room.</p><small>Raw speech stays close to the source.</small></div></div>
+            <form class="manual-form" id="manual-form"><input id="manual-text" placeholder="Add a correction or test sentence…" autocomplete="off" /><button title="Add transcript" type="submit">↗</button></form>
+          </section>
 
-          <div class="panel notes-panel">
-            <div class="panel-head"><div><p class="panel-kicker accent">LIVE NOTES</p><h2>The thread</h2></div><span class="count accent-text" id="notes-count">0 points</span></div>
-            <div class="notes-stream" id="notes-stream"><div class="empty-state"><span class="empty-icon note">✦</span><p>Key points will collect here.</p><small>Notes update in small batches to preserve context and avoid repetition.</small></div></div>
+          <section class="stream-column notes-column" aria-labelledby="notes-heading">
+            <div class="stream-heading"><div><span class="column-index active">02</span><h2 id="notes-heading">The thread</h2></div><span class="count accent-text" id="notes-count">0 points</span></div>
+            <div class="notes-stream" id="notes-stream"><div class="empty-state"><span class="empty-glyph active-glyph">✦</span><p>Key points will land here.</p><small>Short, faithful, and only what is new.</small></div></div>
             <div class="notes-footer"><span class="mini-spark">✦</span><span id="notes-hint">Waiting for the first topic boundary</span></div>
-          </div>
+          </section>
         </section>
 
-        <section class="bottom-grid">
-          <div class="panel context-panel"><div class="panel-head compact"><div><p class="panel-kicker">SESSION ARCHIVE</p><h2>Local memory</h2></div><a id="export-link" class="export-link disabled" href="#">Export Markdown <span>↗</span></a></div><p class="archive-copy">Every session is written as human-readable Markdown and structured JSON inside <code>./sessions</code>. Nothing is uploaded.</p><div class="archive-meta"><span id="session-file">No active session</span><span class="lock">▣ Stored only on this device</span></div></div>
-          <div class="panel settings-panel"><div class="panel-head compact"><div><p class="panel-kicker">LOCAL CONFIGURATION</p><h2>Pipeline settings</h2></div><span class="settings-badge">OFFLINE</span></div><div class="settings-list"><label>Whisper model<select id="model-select"><option value="whisper-small-int8">Small · int8 (recommended)</option><option value="whisper-medium-int8">Medium · int8 (higher accuracy)</option></select></label><label>Microphone<select id="device-select"><option value="">System default</option></select></label><label>Notes cadence <span><output id="interval-output">10</output>s</span><input id="interval-range" type="range" min="5" max="30" value="10" /></label><label>VAD sensitivity <span><output id="vad-output">0.012</output></span><input id="vad-range" type="range" min="4" max="40" value="12" /></label><label class="checkbox-label"><input id="record-audio" type="checkbox" /> Save a local WAV recording with this session</label></div></div>
+        <section class="utility-row">
+          <div class="archive-line"><span class="utility-label">LOCAL ARCHIVE</span><span id="session-file">No active session</span><a id="export-link" class="export-link disabled" href="#">Export Markdown <span>↗</span></a></div>
+          <div class="settings-line"><span class="utility-label">SETTINGS</span><label>model<select id="model-select"><option value="whisper-small-int8">small / int8</option><option value="whisper-medium-int8">medium / int8</option></select></label><label>mic<select id="device-select"><option value="">system default</option></select></label><label>notes <span><output id="interval-output">10</output>s</span><input id="interval-range" type="range" min="5" max="30" value="10" /></label><label>vad <span><output id="vad-output">0.012</output></span><input id="vad-range" type="range" min="4" max="40" value="12" /></label><label class="checkbox-label"><input id="record-audio" type="checkbox" /> wav</label></div>
         </section>
       </main>
-      <footer><span>LISTEN / A LOCAL-FIRST TOOL FOR LEARNING</span><span>ASR + NOTES NEVER LEAVE THIS MACHINE</span></footer>
+      <footer><span>LOCAL-FIRST / NO CLOUD</span><span>HINDI · ENGLISH · HINGLISH</span></footer>
     </div>
     <script src="/static/app.js"></script>
   </body>
