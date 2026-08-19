@@ -106,3 +106,36 @@ The preferred desktop entrypoint is:
 It performs first-run setup when needed, installs Electron, starts the local Python backend and loopback Ollama service, and opens a **frameless Electron window** with no browser navbar. The interface uses a black canvas, hairline separators, inline controls, and a split transcript/notes workspace rather than boxed cards.
 
 The runtime is hardware-adaptive. `LISTEN_ASR_DEVICE=auto` detects CUDA through CTranslate2 when available and otherwise uses CPU int8 inference. WebRTC VAD is preferred when available and the built-in energy VAD remains as a fallback. The local Whisper-small model is the portable default; users with more capable hardware can choose the medium model from setup or the UI.
+
+## Windows support
+
+On Windows 10 22H2 or newer, use PowerShell:
+
+```powershell
+cd Listen
+Set-ExecutionPolicy -Scope Process Bypass
+.\run-desktop.ps1
+```
+
+You can also double-click `run-desktop.bat`. The Windows setup creates `.venv\Scripts\python.exe`, installs the same local audio/ASR dependencies, downloads Whisper, detects a native Ollama installation, pulls `qwen2.5:3b`, and starts the frameless Electron desktop app. If Ollama is not installed, install it from <https://ollama.com/download/windows> and rerun the launcher.
+
+To build a Windows installer or portable ZIP on a Windows development machine:
+
+```powershell
+npm install
+npm run make:win
+```
+
+The artifacts are written to `out\make`. Electron Forge creates the Windows distributable; code signing is still required for a trusted production release.
+
+## References
+
+[1]: https://github.com/SYSTRAN/faster-whisper "SYSTRAN faster-whisper repository"
+[2]: https://huggingface.co/Systran/faster-whisper-small "Systran faster-whisper-small model card"
+[3]: https://ollama.com/library/qwen2.5 "Official Ollama Qwen2.5 model library"
+[4]: https://docs.ollama.com/linux "Official Ollama Linux documentation"
+[5]: https://docs.ollama.com/windows "Official Ollama Windows documentation"
+[6]: https://electronjs.org/docs/latest/tutorial/tutorial-packaging "Electron packaging documentation"
+[7]: https://www.electronforge.io/ "Electron Forge documentation"
+
+The setup and packaging choices are based on the official sources above. [1] [2] [3] [5] [6] [7]

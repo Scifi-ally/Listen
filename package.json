@@ -9,9 +9,15 @@
   "scripts": {
     "start": "electron .",
     "desktop": "./run-desktop.sh",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "make:win": "electron-forge make --platform win32",
     "test": "node --check electron/main.cjs && node --check electron/preload.cjs && node --check listen_app/static/app.js"
   },
   "devDependencies": {
+    "@electron-forge/cli": "^7.11.2",
+    "@electron-forge/maker-squirrel": "^7.11.2",
+    "@electron-forge/maker-zip": "^7.11.2",
     "electron": "^37.2.6"
   }
 }

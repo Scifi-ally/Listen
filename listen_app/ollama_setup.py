@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import platform
 import shutil
 import subprocess
 import sys
@@ -21,6 +22,7 @@ from .core import ROOT_DIR
 OLLAMA_ARCHIVE_URL = "https://ollama.com/download/ollama-linux-amd64.tar.zst"
 OLLAMA_ROOT = ROOT_DIR / ".local" / "ollama"
 OLLAMA_BINARY = OLLAMA_ROOT / "bin" / "ollama"
+OLLAMA_WINDOWS_BINARY = OLLAMA_ROOT / "ollama.exe"
 OLLAMA_MODELS = ROOT_DIR / "models" / "ollama"
 OLLAMA_HOST = "127.0.0.1:11434"
 
@@ -45,8 +47,14 @@ def ensure_binary() -> Path:
     system_binary = shutil.which("ollama")
     if system_binary:
         return Path(system_binary)
+    if platform.system() == "Windows":
+        if OLLAMA_WINDOWS_BINARY.exists():
+            return OLLAMA_WINDOWS_BINARY
+        raise RuntimeError("Ollama is not installed. Run the official OllamaSetup.exe, then run setup.ps1 again.")
     if OLLAMA_BINARY.exists():
         return OLLAMA_BINARY
+    if platform.system() != "Linux":
+        raise RuntimeError("Automatic project-local Ollama download currently supports Linux. Install Ollama from https://ollama.com/download for this platform.")
     cache = ROOT_DIR / ".cache"
     cache.mkdir(parents=True, exist_ok=True)
     archive = cache / "ollama-linux-amd64.tar.zst"
@@ -111,6 +119,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Install the local Ollama runtime and note model")
     parser.add_argument("--model", default="qwen2.5:3b")
     parser.add_argument("--skip", action="store_true")
+    parser.add_argument("--windows", action="store_true", help="Use the native Windows Ollama installation")
     parser.add_argument("--start-only", action="store_true", help="Start local Ollama without pulling a model")
     args = parser.parse_args(argv)
     if not args.skip:

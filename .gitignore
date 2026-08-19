@@ -13,4 +13,5 @@ models/*
 .cache/*
 node_modules/
 dist/
+out/
 .env
