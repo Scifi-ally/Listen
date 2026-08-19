@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Listen — Offline Lecture Notes</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand"><span class="brand-mark">L</span><div><strong>Listen</strong><span>offline lecture intelligence</span></div></div>
+        <div class="offline-pill"><span class="pulse"></span>LOCAL ONLY</div>
+      </header>
+
+      <main>
+        <section class="hero-row">
+          <div>
+            <p class="eyebrow">FIELD NOTES / REAL TIME</p>
+            <h1>Stay present.<br /><em>Keep the thread.</em></h1>
+            <p class="hero-copy">A quiet companion for bilingual classrooms. Speech and notes stay on this laptop, from first word to final export.</p>
+          </div>
+          <div class="session-card">
+            <label for="session-title">SESSION TITLE</label>
+            <input id="session-title" value="Untitled lecture" maxlength="160" />
+            <div class="control-row">
+              <button class="primary" id="start-btn"><span class="record-dot"></span> Start listening</button>
+              <button class="secondary" id="stop-btn" disabled>Stop session</button>
+            </div>
+            <div class="status-line"><span id="status-dot" class="status-dot idle"></span><span id="status-text">Ready when you are</span><span id="timer">00:00</span></div>
+          </div>
+        </section>
+
+        <section class="workspace">
+          <div class="panel transcript-panel">
+            <div class="panel-head"><div><p class="panel-kicker">RAW TRANSCRIPT</p><h2>What was said</h2></div><span class="count" id="transcript-count">0 segments</span></div>
+            <div class="stream" id="transcript-stream"><div class="empty-state"><span class="empty-icon">⌁</span><p>Start a session to see speech appear here.</p><small>Hindi, English, and Hinglish are kept exactly as heard.</small></div></div>
+            <form class="manual-form" id="manual-form"><input id="manual-text" placeholder="Add a correction or paste a test sentence…" autocomplete="off" /><button title="Add transcript" type="submit">＋</button></form>
+          </div>
+
+          <div class="panel notes-panel">
+            <div class="panel-head"><div><p class="panel-kicker accent">LIVE NOTES</p><h2>The thread</h2></div><span class="count accent-text" id="notes-count">0 points</span></div>
+            <div class="notes-stream" id="notes-stream"><div class="empty-state"><span class="empty-icon note">✦</span><p>Key points will collect here.</p><small>Notes update in small batches to preserve context and avoid repetition.</small></div></div>
+            <div class="notes-footer"><span class="mini-spark">✦</span><span id="notes-hint">Waiting for the first topic boundary</span></div>
+          </div>
+        </section>
+
+        <section class="bottom-grid">
+          <div class="panel context-panel"><div class="panel-head compact"><div><p class="panel-kicker">SESSION ARCHIVE</p><h2>Local memory</h2></div><a id="export-link" class="export-link disabled" href="#">Export Markdown <span>↗</span></a></div><p class="archive-copy">Every session is written as human-readable Markdown and structured JSON inside <code>./sessions</code>. Nothing is uploaded.</p><div class="archive-meta"><span id="session-file">No active session</span><span class="lock">▣ Encrypted by your device</span></div></div>
+          <div class="panel settings-panel"><div class="panel-head compact"><div><p class="panel-kicker">LOCAL CONFIGURATION</p><h2>Pipeline settings</h2></div><span class="settings-badge">OFFLINE</span></div><div class="settings-list"><label>Whisper model<select id="model-select"><option value="whisper-medium-int8">Medium · int8 (accuracy)</option><option value="whisper-small-int8">Small · int8 (speed)</option></select></label><label>Notes cadence <span><output id="interval-output">10</output>s</span><input id="interval-range" type="range" min="5" max="30" value="10" /></label><label>VAD sensitivity <span><output id="vad-output">0.012</output></span><input id="vad-range" type="range" min="4" max="40" value="12" /></label></div></div>
+        </section>
+      </main>
+      <footer><span>LISTEN / A LOCAL-FIRST TOOL FOR LEARNING</span><span>ASR + NOTES NEVER LEAVE THIS MACHINE</span></footer>
+    </div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

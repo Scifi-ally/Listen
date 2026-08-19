@@ -1,0 +1,5 @@
+# Optional microphone capture and local transcription dependencies.
+# These packages do not download model weights; install weights separately under ./models.
+sounddevice>=0.5,<1
+numpy>=1.26,<3
+faster-whisper>=1.1,<2
