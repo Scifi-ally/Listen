@@ -88,7 +88,7 @@ async def config() -> dict[str, Any]:
         "offline": True,
         "models_dir": os.getenv("LISTEN_MODELS_DIR", str(BASE_DIR.parent / "models")),
         "default_asr_model": DEFAULT_ASR_MODEL,
-        "asr_options": ["whisper-small-int8", "whisper-medium-int8"],
+        "asr_options": ["auto", "whisper-tiny-int8", "whisper-small-int8", "whisper-medium-int8"],
         "local_models": readiness["local_models"],
         "default_llm_model": os.getenv("LISTEN_OLLAMA_MODEL", "qwen2.5:3b"),
         "ollama_host": os.getenv("LISTEN_OLLAMA_HOST", DEFAULT_OLLAMA_HOST),

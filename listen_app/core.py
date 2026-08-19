@@ -25,12 +25,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Protocol
 
+from .hardware import HardwareProfile, detect_hardware
+
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 SESSIONS_DIR = Path(os.getenv("LISTEN_SESSIONS_DIR", ROOT_DIR / "sessions"))
 MODELS_DIR = Path(os.getenv("LISTEN_MODELS_DIR", ROOT_DIR / "models"))
 DEFAULT_OLLAMA_HOST = "http://127.0.0.1:11434"
-DEFAULT_ASR_MODEL = os.getenv("LISTEN_DEFAULT_ASR_MODEL", "whisper-small-int8")
+DEFAULT_ASR_MODEL = os.getenv("LISTEN_DEFAULT_ASR_MODEL", "auto")
 _ALLOWED_CATEGORIES = {"definition", "fact", "example", "emphasis", "key point"}
 _SESSION_ID_RE = re.compile(r"^[0-9]{8}-[0-9]{6}-[0-9a-f]{6}$")
 
@@ -63,26 +65,31 @@ def available_local_models(root: Path = MODELS_DIR) -> list[str]:
 
 
 def detect_asr_device() -> str:
-    requested = os.getenv("LISTEN_ASR_DEVICE", "auto").lower()
-    if requested in {"cpu", "cuda"}:
-        return requested
-    try:
-        import ctranslate2
-        if ctranslate2.get_cuda_device_count() > 0:
-            return "cuda"
-    except (ImportError, AttributeError, RuntimeError, OSError):
-        pass
-    return "cpu"
+    return detect_hardware().asr_device
+
+
+def best_available_whisper_model(profile: HardwareProfile | None = None, root: Path = MODELS_DIR) -> str:
+    profile = profile or detect_hardware()
+    available = set(available_local_models(root))
+    preferred_order = [profile.whisper_model, "whisper-medium-int8", "whisper-small-int8", "whisper-tiny-int8"]
+    for candidate in preferred_order:
+        if candidate in available:
+            return candidate
+    return profile.whisper_model
 
 
 def local_readiness(root: Path = MODELS_DIR) -> dict[str, Any]:
+    profile = detect_hardware()
     return {
         "audio_dependency": importlib.util.find_spec("sounddevice") is not None,
         "vad_dependency": importlib.util.find_spec("webrtcvad") is not None,
         "asr_dependency": importlib.util.find_spec("faster_whisper") is not None,
         "local_models": available_local_models(root),
         "ollama_host": os.getenv("LISTEN_OLLAMA_HOST", DEFAULT_OLLAMA_HOST),
-        "asr_device": detect_asr_device(),
+        "asr_device": profile.asr_device,
+        "hardware": profile.as_dict(),
+        "recommended_model": profile.whisper_model,
+        "selected_model": best_available_whisper_model(profile, root),
     }
 
 
@@ -234,10 +241,11 @@ class UnavailableTranscriber:
 
 
 class FasterWhisperTranscriber:
-    def __init__(self, model_path: str | Path, device: str = "cuda", compute_type: str = "int8") -> None:
+    def __init__(self, model_path: str | Path, device: str = "cuda", compute_type: str = "int8", beam_size: int = 3) -> None:
         self.model_path = str(model_path)
         self.device = device
         self.compute_type = compute_type
+        self.beam_size = beam_size
         try:
             from faster_whisper import WhisperModel
         except ImportError as exc:
@@ -258,7 +266,7 @@ class FasterWhisperTranscriber:
         segments, _ = self.model.transcribe(
             audio,
             language=None,
-            beam_size=5,
+            beam_size=self.beam_size,
             vad_filter=False,
             condition_on_previous_text=True,
             temperature=0.0,
@@ -266,16 +274,18 @@ class FasterWhisperTranscriber:
         return " ".join(item.text.strip() for item in segments if item.text.strip()).strip()
 
 
-def create_transcriber(model_name: str, device: str | None = None) -> Transcriber:
-    model_path = MODELS_DIR / model_name
-    preferred = device or detect_asr_device()
+def create_transcriber(model_name: str, device: str | None = None, profile: HardwareProfile | None = None) -> Transcriber:
+    profile = profile or detect_hardware()
+    selected_model = best_available_whisper_model(profile) if model_name in {"", "auto"} else model_name
+    model_path = MODELS_DIR / selected_model
+    preferred = device or profile.asr_device
     attempts = [(preferred, "int8")]
     if preferred == "cuda" and os.getenv("LISTEN_CPU_FALLBACK", "1") == "1":
         attempts.append(("cpu", "int8"))
     failures: list[str] = []
     for selected_device, compute_type in attempts:
         try:
-            return FasterWhisperTranscriber(model_path, device=selected_device, compute_type=compute_type)
+            return FasterWhisperTranscriber(model_path, device=selected_device, compute_type=compute_type, beam_size=profile.whisper_beam_size)
         except RuntimeError as exc:
             failures.append(str(exc))
     return UnavailableTranscriber("; ".join(failures))
@@ -535,15 +545,22 @@ class LectureRunner:
         store: SessionStore | None = None,
         audio_device: int | str | None = None,
         record_audio: bool = False,
+        profile: HardwareProfile | None = None,
     ) -> None:
         self.session = session
         self.publish = publish
         self.store = store or SessionStore()
+        self.profile = profile or detect_hardware()
+        if model_name in {"", "auto"}:
+            model_name = best_available_whisper_model(self.profile)
+        if note_interval_seconds == 10.0 and os.getenv("LISTEN_NOTE_INTERVAL") is None:
+            note_interval_seconds = self.profile.note_interval_seconds
+        self.session["hardware_profile"] = {**self.profile.as_dict(), "selected_model": model_name}
         self.note_interval_seconds = max(5.0, min(60.0, float(note_interval_seconds)))
         self.vad = create_vad(threshold=vad_threshold)
-        self.transcriber = create_transcriber(model_name)
+        self.transcriber = create_transcriber(model_name, profile=self.profile)
         try:
-            self.extractor: Any = KeyPointExtractor(model=os.getenv("LISTEN_OLLAMA_MODEL", "qwen2.5:3b"))
+            self.extractor: Any = KeyPointExtractor(model=os.getenv("LISTEN_OLLAMA_MODEL", self.profile.note_model))
         except ValueError as exc:
             self.extractor = HeuristicOnlyExtractor(str(exc))
         self.audio_device = audio_device

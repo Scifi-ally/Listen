@@ -15,6 +15,7 @@ from pathlib import Path
 from .core import MODELS_DIR, available_local_models
 
 WHISPER_REPOS = {
+    "tiny": "Systran/faster-whisper-tiny",
     "small": "Systran/faster-whisper-small",
     "medium": "Systran/faster-whisper-medium",
 }

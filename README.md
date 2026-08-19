@@ -11,9 +11,9 @@ cd Listen
 ./run.sh
 ```
 
-The launcher creates `.venv`, installs the Python/audio/ASR dependencies, downloads the local **faster-whisper-small** speech model into `./models/whisper-small-int8`, downloads the official project-local Ollama runtime into `./.local/ollama`, pulls the local **Qwen2.5 3B** note model into `./models/ollama`, runs a readiness check, and starts the app at <http://127.0.0.1:8765>. After the first setup, `./run.sh` reuses the environment and verifies existing model files instead of downloading them again.
+The launcher creates `.venv`, installs the Python/audio/ASR dependencies, profiles the laptop, downloads the best safe local Whisper model for that hardware into `./models`, downloads the official project-local Ollama runtime into `./.local/ollama`, pulls the matching local Qwen note model, runs a readiness check, and starts the app at <http://127.0.0.1:8765>. After the first setup, `./run.sh` reuses the environment and verifies existing model files instead of downloading them again.
 
-The small model is the default because it is the safer starting point across CPU-only laptops and laptops with limited GPU memory. To download the larger Whisper model instead, run:
+Automatic selection uses Whisper Tiny for constrained laptops, Whisper Small for balanced laptops, and Whisper Medium for machines with enough memory and GPU headroom. To override the automatic choice, run:
 
 ```bash
 ./scripts/setup.sh --size=medium --launch
@@ -63,7 +63,7 @@ Choose **Save a local WAV recording** if you want the raw microphone capture ret
 | --- | --- | --- |
 | `LISTEN_SESSIONS_DIR` | `./sessions` | Local JSON, Markdown, and optional WAV output directory |
 | `LISTEN_MODELS_DIR` | `./models` | Local faster-whisper model directory |
-| `LISTEN_DEFAULT_ASR_MODEL` | `whisper-small-int8` | Model selected by default in the API |
+| `LISTEN_DEFAULT_ASR_MODEL` | `auto` | Model selection mode; automatically chooses the best downloaded profile |
 | `LISTEN_ASR_DEVICE` | `auto` | `auto`, `cuda`, or `cpu`; auto selects CUDA when available and otherwise CPU |
 | `LISTEN_CPU_FALLBACK` | `1` | Try local CPU ASR if CUDA model loading fails |
 | `LISTEN_VAD_ENGINE` | `auto` | `auto` prefers WebRTC VAD; set `energy` to force the fallback |

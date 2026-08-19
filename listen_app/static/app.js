@@ -225,6 +225,7 @@ async function loadReadiness() {
     const configResponse = await fetch('/api/config');
     const config = await configResponse.json();
     const readiness = config.readiness || {};
+    const hardware = readiness.hardware || {};
     const localModels = readiness.local_models || [];
     if (!readiness.audio_dependency) {
       setReadiness('UI ready · microphone dependency not installed', 'warn', 'pip install -r requirements-audio.txt');
@@ -233,7 +234,14 @@ async function loadReadiness() {
     } else if (!localModels.length) {
       setReadiness('Microphone ready · local Whisper model not found', 'warn', 'place model under ./models');
     } else {
-      setReadiness('Local microphone and Whisper model detected', 'ready', localModels.join(', '));
+      const tier = hardware.tier ? `${hardware.tier} profile` : 'adaptive profile';
+      const device = hardware.asr_device ? hardware.asr_device.toUpperCase() : 'AUTO';
+      const model = readiness.selected_model || readiness.recommended_model || config.default_asr_model || 'auto';
+      setReadiness(`Auto ${tier} · ${device}`, 'ready', `${model} · ${hardware.memory_gb || '?'} GB RAM`);
+      if (modelSelect.value === 'auto' && Number(hardware.note_interval_seconds)) {
+        intervalRange.value = String(hardware.note_interval_seconds);
+        intervalOutput.value = String(hardware.note_interval_seconds);
+      }
     }
 
     if (Array.isArray(config.local_models)) {

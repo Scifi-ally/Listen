@@ -58,7 +58,7 @@ async function startBackend() {
     env: {
       ...process.env,
       PYTHONPATH: ROOT,
-      LISTEN_DEFAULT_ASR_MODEL: process.env.LISTEN_DEFAULT_ASR_MODEL || 'whisper-small-int8',
+      LISTEN_DEFAULT_ASR_MODEL: process.env.LISTEN_DEFAULT_ASR_MODEL || 'auto',
     },
     stdio: 'pipe',
   });

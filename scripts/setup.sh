@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 VENV_DIR="${LISTEN_VENV_DIR:-$ROOT_DIR/.venv}"
-WHISPER_SIZE="${LISTEN_WHISPER_SIZE:-small}"
+WHISPER_SIZE="${LISTEN_WHISPER_SIZE:-auto}"
 SKIP_OLLAMA=0
 LAUNCH=0
 FORCE_MODEL=0
@@ -24,7 +24,7 @@ Options:
   --launch       Start the local Listen server after setup.
   --skip-ollama  Do not pull qwen2.5:3b, keep the heuristic note fallback.
   --force-model  Re-download the selected Whisper model.
-  --size=small|medium  Select the local Whisper model size (default: small).
+  --size=auto|tiny|small|medium  Select a model or let hardware choose (default: auto).
 USAGE
       exit 0
       ;;
@@ -47,17 +47,21 @@ source "$VENV_DIR/bin/activate"
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt -r requirements-audio.txt
 
+if [ "$WHISPER_SIZE" = "auto" ]; then
+  WHISPER_SIZE="$(python -c 'from listen_app.hardware import detect_hardware; print(detect_hardware().whisper_model.removeprefix("whisper-").removesuffix("-int8"))')"
+fi
 MODEL_ARGS=(--size "$WHISPER_SIZE" --skip-ollama)
 if [ "$FORCE_MODEL" -eq 1 ]; then MODEL_ARGS+=(--force); fi
 python -m listen_app.model_setup "${MODEL_ARGS[@]}"
 
+OLLAMA_MODEL="${LISTEN_OLLAMA_MODEL:-$(python -c 'from listen_app.hardware import detect_hardware; print(detect_hardware().note_model)')}"
 if [ "$SKIP_OLLAMA" -eq 0 ]; then
-  python -m listen_app.ollama_setup --model "${LISTEN_OLLAMA_MODEL:-qwen2.5:3b}"
+  python -m listen_app.ollama_setup --model "$OLLAMA_MODEL"
 else
   echo "Skipping local Ollama setup; Listen will use its heuristic note fallback."
 fi
 
-export LISTEN_DEFAULT_ASR_MODEL="whisper-${WHISPER_SIZE}-int8"
+export LISTEN_DEFAULT_ASR_MODEL="auto"
 python -m listen_app.preflight
 
 echo

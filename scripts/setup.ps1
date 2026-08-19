@@ -1,6 +1,6 @@
 param(
-  [ValidateSet('small', 'medium')]
-  [string]$WhisperSize = 'small',
+  [ValidateSet('auto', 'tiny', 'small', 'medium')]
+  [string]$WhisperSize = 'auto',
   [switch]$SkipOllama,
   [switch]$Launch
 )
@@ -33,18 +33,21 @@ Write-Step 'Installing local Python, microphone, VAD, and transcription dependen
 & $VenvPython -m pip install --upgrade pip
 & $VenvPython -m pip install -r (Join-Path $Root 'requirements.txt') -r (Join-Path $Root 'requirements-audio.txt')
 
+if ($WhisperSize -eq 'auto') {
+  $WhisperSize = (& $VenvPython -c "from listen_app.hardware import detect_hardware; print(detect_hardware().whisper_model.replace('whisper-', '').replace('-int8', ''))").Trim()
+}
 Write-Step "Downloading and verifying Whisper $WhisperSize"
 & $VenvPython -m listen_app.model_setup --size $WhisperSize --skip-ollama
 
 if (-not $SkipOllama) {
   Write-Step 'Installing or locating Ollama and pulling the local Qwen2.5 note model'
-  $OllamaModel = if ($env:LISTEN_OLLAMA_MODEL) { $env:LISTEN_OLLAMA_MODEL } else { 'qwen2.5:3b' }
+  $OllamaModel = if ($env:LISTEN_OLLAMA_MODEL) { $env:LISTEN_OLLAMA_MODEL } else { (& $VenvPython -c "from listen_app.hardware import detect_hardware; print(detect_hardware().note_model)").Trim() }
   & $VenvPython -m listen_app.ollama_setup --windows --model $OllamaModel
 } else {
   Write-Host 'Skipping Ollama; Listen will use its local heuristic note fallback.' -ForegroundColor Yellow
 }
 
-$env:LISTEN_DEFAULT_ASR_MODEL = "whisper-$WhisperSize-int8"
+$env:LISTEN_DEFAULT_ASR_MODEL = 'auto'
 Write-Step 'Checking local readiness'
 & $VenvPython -m listen_app.preflight
 
